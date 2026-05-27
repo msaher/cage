@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,8 +10,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
-
-	"github.com/joho/godotenv"
 )
 
 var (
@@ -44,6 +43,29 @@ func (e *Envs) Set(v string) error {
 		*e = append(*e, v)
 	}
 	return nil
+}
+
+func parseEnvFile(file string) ([]string, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+
+	envs := make([]string, 0)
+	for scanner.Scan() {
+		line := strings.TrimLeft(scanner.Text(), " \t")
+		if len(line) == 0 || strings.HasPrefix(line, "#") {
+			continue
+		}
+		_, _, hasVal := strings.Cut(line, "=")
+		if !hasVal {
+			return nil, fmt.Errorf("%s: invalid environment variable: %q", line)
+		}
+		envs = append(envs, line)
+	}
+	return envs, scanner.Err()
 }
 
 
@@ -183,13 +205,11 @@ func run() error {
 	}
 
 	if envFile != "" {
-		envs, err := godotenv.Read(envFile)
+		envsFromFile, err := parseEnvFile(envFile)
 		if err != nil {
 			return err
 		}
-		for key, value := range envs {
-			args = append(args, "--setenv", key, value)
-		}
+		envs = append(envsFromFile, envs...)
 	}
 
 	for _, e := range envs {
