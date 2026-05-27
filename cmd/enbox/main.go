@@ -9,6 +9,10 @@ import (
 	"path/filepath"
 )
 
+var (
+	cwd string
+)
+
 type Dirs []string
 
 func (d *Dirs) String() string {
@@ -35,15 +39,14 @@ func run() error {
 
 	// flags
 	var dirs Dirs
-	var entryPoint string
 	var chdir string
 	var offline bool
 	flag.Var(&dirs, "dir", "writable directory (can repeat)")
-	flag.StringVar(&entryPoint, "exec", "sh", "entry point")
 	flag.StringVar(&chdir, "chdir", "", "directory to change into")
 	flag.BoolVar(&offline, "offline", false, "no network access")
-
 	flag.Parse()
+
+	entryPoint := flag.Args()
 
 	if chdir == "." {
 		chdir = cwd
@@ -104,8 +107,6 @@ func run() error {
 		args = append(args, "--bind", d, d)
 	}
 
-	// cd into first directory
-	if len(dirs) > 0 {
 	if chdir != "" {
 		args = append(args, "--chdir", chdir)
 	} else if len(dirs) > 0 {
@@ -120,7 +121,8 @@ func run() error {
 		args = append(args, "--unshare-net")
 	}
 
-	args = append(args, entryPoint)
+	args = append(args, "--")
+	args = append(args, entryPoint...)
 
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = os.Stdin
