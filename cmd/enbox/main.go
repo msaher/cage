@@ -65,12 +65,16 @@ func run() error {
 	var print bool
 	var clearEnv bool
 	var envs Envs
+	var wantConfig, wantCache, wantDataDir bool
 	flag.Var(&rwDirs, "rw", "add read-write directory (can repeat)")
 	flag.Var(&roDirs, "ro", "add read-only directory (can repeat)")
 	flag.StringVar(&chdir, "chdir", "", "directory to change into")
 	flag.BoolVar(&offline, "offline", false, "no network access")
 	flag.BoolVar(&print, "print", false, "print bwrap command; dont run anything")
 	flag.BoolVar(&clearEnv, "clearenv", false, "clear environment variables")
+	flag.BoolVar(&wantConfig, "ro-config", false, "alias for -ro $XDG_CONFIG_HOME (fallback to ~/.config)")
+	flag.BoolVar(&wantCache, "rw-cache", false, "alias for -rw $XDG_CACHE_HOME (fallback to ~/.cache)")
+	flag.BoolVar(&wantDataDir, "rw-data", false, "alias for -rw $XDG_DATA_HOME (fallback to ~/.local/share/)")
 	flag.Var(&envs, "env", "set environment variable")
 	flag.Parse()
 
@@ -78,20 +82,6 @@ func run() error {
 
 	if chdir == "." {
 		chdir = cwd
-	}
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-	local := filepath.Join(home, ".local")
-	cache, err := os.UserCacheDir()
-	if err != nil {
-		return err
-	}
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		return err
 	}
 
 	var uid string
@@ -126,13 +116,36 @@ func run() error {
 		"--tmpfs", "/tmp",
 		"--proc", "/proc",
 		"--dev", "/dev",
+	if wantConfig {
+		configDir, err := os.UserConfigDir()
+		if err != nil {
+			return err
+		}
+		args = append(args, "--ro-bind", configDir, configDir)
+	}
 
 		// fake runtime
 		"--tmpfs", runtimeDir,
+	if wantCache {
+		cache, err := os.UserCacheDir()
+		if err != nil {
+			return err
+		}
+		args = append(args, "--bind", cache, cache)
+	}
 
-		// directories you can write to
-		"--bind", cache, cache,
-		"--bind", local, local,
+	if wantDataDir {
+		// stdlib has no os.UserDataDir()
+		dataDir := os.Getenv("XDG_DATA_HOME")
+		if dataDir == "" {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return err
+			}
+			dataDir = filepath.Join(home, ".local", "share")
+		}
+
+		args = append(args, "--bind", dataDir, dataDir)
 	}
 
 	for _, d := range roDirs {
