@@ -61,7 +61,7 @@ func parseEnvFile(file string) ([]string, error) {
 		}
 		_, _, hasVal := strings.Cut(line, "=")
 		if !hasVal {
-			return nil, fmt.Errorf("%s: invalid environment variable: %q", line)
+			return nil, fmt.Errorf("%s: invalid environment variable: %q", file, line)
 		}
 		envs = append(envs, line)
 	}
