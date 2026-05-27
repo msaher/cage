@@ -89,14 +89,14 @@ func run() error {
 		"bwrap",
 
 		// common stuff we need
-		"--ro-bind", "/usr", "/usr",
-		"--ro-bind", "/bin", "/bin",
-		"--ro-bind", "/lib", "/lib",
-		"--ro-bind", "/lib64", "/lib64",
-		"--ro-bind", "/opt", "/opt",
+		"--ro-bind-try", "/usr", "/usr",
+		"--ro-bind-try", "/bin", "/bin",
+		"--ro-bind-try", "/lib", "/lib",
+		"--ro-bind-try", "/lib64", "/lib64",
+		"--ro-bind-try", "/opt", "/opt",
 		// whoami needs /etc/group and /etc/passwd
 		// we need /etc/resolve.conf for internet
-		"--ro-bind", "/etc/", "/etc/",
+		"--ro-bind-try", "/etc/", "/etc/",
 	}
 
 	if wantConfig {
@@ -197,9 +197,7 @@ func run() error {
 		}
 		runtimeDir = filepath.Join("/run", "user", u.Uid)
 	}
-	if _, err := os.Stat(runtimeDir); err == nil {
-		args = append(args, "--bind", runtimeDir, runtimeDir)
-	}
+	args = append(args, "--bind-try", runtimeDir, runtimeDir)
 
 	// set special file systems
 	// NOTE: must be set before --ro-bind. Otherwise an --ro-bind can override
