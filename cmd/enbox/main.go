@@ -63,7 +63,7 @@ func run() error {
 	var chdir string
 	var offline bool
 	var print bool
-	var clearEnv bool
+	var clearEnv, inheritAllEnv bool
 	var envs Envs
 	var wantConfig, wantCache, wantDataDir bool
 	flag.Var(&rwDirs, "rw", "add read-write directory (can repeat)")
@@ -72,6 +72,7 @@ func run() error {
 	flag.BoolVar(&offline, "offline", false, "no network access")
 	flag.BoolVar(&print, "print", false, "print bwrap command; dont run anything")
 	flag.BoolVar(&clearEnv, "clearenv", false, "clear environment variables")
+	flag.BoolVar(&inheritAllEnv, "inherit-all-env", false, "inherit all environments variables")
 	flag.BoolVar(&wantConfig, "ro-config", false, "alias for -ro $XDG_CONFIG_HOME (fallback to ~/.config)")
 	flag.BoolVar(&wantCache, "rw-cache", false, "alias for -rw $XDG_CACHE_HOME (fallback to ~/.cache)")
 	flag.BoolVar(&wantDataDir, "rw-data", false, "alias for -rw $XDG_DATA_HOME (fallback to ~/.local/share/)")
@@ -163,8 +164,28 @@ func run() error {
 	// we could manage env variables through cmd.Env instead
 	// but --clearenv sets the right working directory for us
 	// AND -print shows env vars
+
 	if clearEnv {
 		args = append(args, "--clearenv")
+	} else if !inheritAllEnv {
+		// only inherit obvious ones
+		envs := []string{
+			"HOME",
+			"TERM",
+			"EDITOR",
+			"VISUAL",
+			"PATH",
+			"XDG_CONFIG_HOME",
+			"XDG_CACHE_HOME",
+			"XDG_DATA_HOME",
+		}
+		for _, k := range envs {
+			v := os.Getenv(k)
+			if v != "" {
+				args = append(args, "--setenv", k, v)
+			}
+		}
+
 	}
 
 	for _, e := range envs {
