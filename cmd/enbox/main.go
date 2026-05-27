@@ -44,10 +44,12 @@ func run() error {
 	}
 
 	// flags
-	var dirs Dirs
+	var rwDirs Dirs
+	var roDirs Dirs
 	var chdir string
 	var offline bool
-	flag.Var(&dirs, "dir", "writable directory (can repeat)")
+	flag.Var(&rwDirs, "rw", "add read-write directory (can repeat)")
+	flag.Var(&roDirs, "ro", "add read-only directory (can repeat)")
 	flag.StringVar(&chdir, "chdir", "", "directory to change into")
 	flag.BoolVar(&offline, "offline", false, "no network access")
 	flag.Parse()
@@ -106,17 +108,19 @@ func run() error {
 		"--bind", local, local,
 		}
 
-	for _, d := range dirs {
-		if d == "." {
-			d = cwd
-		}
+
+	for _, d := range roDirs {
+		args = append(args, "--ro-bind", d, d)
+	}
+
+	for _, d := range rwDirs {
 		args = append(args, "--bind", d, d)
 	}
 
 	if chdir != "" {
 		args = append(args, "--chdir", chdir)
-	} else if len(dirs) > 0 {
-		d := dirs[0]
+	} else if len(rwDirs) > 0 {
+		d := rwDirs[0]
 		if d == "." {
 			d = cwd
 		}
