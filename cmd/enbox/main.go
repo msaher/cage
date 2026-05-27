@@ -123,6 +123,9 @@ func run() error {
 	}
 
 	args = append(args, "--")
+	if len(entryPoint) == 0 {
+		entryPoint = []string{"sh"}
+	}
 	args = append(args, entryPoint...)
 
 	cmd := exec.Command(args[0], args[1:]...)
