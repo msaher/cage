@@ -112,10 +112,6 @@ func run() error {
 		"--ro-bind", "/etc/group", "/etc/group", // for whoami
 		"--ro-bind", configDir, configDir,
 
-		// commonly needed
-		"--tmpfs", "/tmp",
-		"--proc", "/proc",
-		"--dev", "/dev",
 	if wantConfig {
 		configDir, err := os.UserConfigDir()
 		if err != nil {
@@ -124,8 +120,6 @@ func run() error {
 		args = append(args, "--ro-bind", configDir, configDir)
 	}
 
-		// fake runtime
-		"--tmpfs", runtimeDir,
 	if wantCache {
 		cache, err := os.UserCacheDir()
 		if err != nil {
@@ -184,6 +178,22 @@ func run() error {
 		}
 		args = append(args, "--setenv", keyval[0], keyval[1])
 	}
+
+	// set special file systems
+	// NOTE: must be set before --ro-bind. Otherwise an --ro-bind can override
+	// the permissions of say, a --dev-bind
+	// had a hard-to-find bug where I couldn't use the GPU because --ro-bind / / overwrote /dev
+	args = append(args, []string {
+		"--tmpfs", "/tmp",
+		"--proc", "/proc",
+
+		// for hardware. GPU won't work without it
+		"--dev-bind", "/dev", "/dev",
+
+		// used by systemd
+		// can't play audio without it
+		"--bind", runtimeDir, runtimeDir,
+	}...)
 
 	args = append(args, "--")
 	if len(entryPoint) == 0 {
