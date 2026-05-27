@@ -57,7 +57,6 @@ func run() error {
 		return err
 	}
 
-	// flags
 	var rwDirs Dirs
 	var roDirs Dirs
 	var chdir string
