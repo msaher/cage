@@ -9,15 +9,31 @@ import (
 	"path/filepath"
 )
 
+type Dirs []string
+
+func (d *Dirs) String() string {
+	return fmt.Sprint([]string(*d))
+}
+
+func (d *Dirs) Set(v string) error {
+	*d = append(*d, v)
+	return nil
+}
+
 func run() error {
 	// flags
-	var dir, entryPoint string
+	var dirs Dirs
+	var entryPoint string
 	var offline bool
-	flag.StringVar(&dir, "dir", "", "writeable directory")
+	flag.Var(&dirs, "dir", "writable directory (can repeat)")
 	flag.StringVar(&entryPoint, "exec", "sh", "entry point")
-	flag.BoolVar(&offline, "offline", false, "disable internet")
+	flag.BoolVar(&offline, "offline", false, "no network access")
 	flag.Parse()
 
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -28,22 +44,12 @@ func run() error {
 		return err
 	}
 
-	// default to cwd
-	if dir == "" {
-		var err error
-		dir, err = os.Getwd()
-		if err != nil {
-			return err
-		}
-	}
-
 	u, err := user.Current()
 	if err != nil {
 		return err
 	}
 	uid := u.Uid
 	runtimeDir := filepath.Join("/run", "user", uid)
-
 
 	// common stuff we need to expose if we later want to make a
 	// sandbox that limits whats readable from /
@@ -72,19 +78,22 @@ func run() error {
 		"--dev", "/dev",
 
 		// directories you can write to
-		"--bind", dir, dir,
 		"--bind", cache, cache,
 		"--bind", local, local,
 		}
+
+	for _, d := range dirs {
+		if d == "." {
+			d = cwd
+		}
+		args = append(args, "--bind", d, d)
+	}
 
 	if offline {
 		args = append(args, "--unshare-net")
 	}
 
-	args = append(args, []string {
-		"--chdir", dir,
-		entryPoint,
-	}...)
+	args = append(args, entryPoint)
 
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = os.Stdin
