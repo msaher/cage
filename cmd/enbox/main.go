@@ -103,6 +103,7 @@ func run() error {
 		"--ro-bind", "/bin", "/bin",
 		"--ro-bind", "/lib", "/lib",
 		"--ro-bind", "/lib64", "/lib64",
+		"--ro-bind", "/opt", "/opt",
 		// whoami needs /etc/group and /etc/passwd
 		// we need /etc/resolve.conf for internet
 		"--ro-bind", "/etc/", "/etc/",
