@@ -36,10 +36,10 @@ func run() error {
 	}
 
 	u, err := user.Current()
-	uid := u.Uid
 	if err != nil {
 		return err
 	}
+	uid := u.Uid
 	runtimeDir := filepath.Join("/run", "user", uid)
 
 	args := []string{
