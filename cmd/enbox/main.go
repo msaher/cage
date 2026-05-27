@@ -52,6 +52,7 @@ func run() error {
 		return err
 	}
 
+	// type Dirs needs cwd
 	cwd, err = os.Getwd()
 	if err != nil {
 		return err
@@ -92,7 +93,6 @@ func run() error {
 		uid = u.Uid
 	}
 	runtimeDir := filepath.Join("/run", "user", uid)
-	_ = runtimeDir
 
 	args := []string{
 		"bwrap",
