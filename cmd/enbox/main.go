@@ -16,25 +16,39 @@ func (d *Dirs) String() string {
 }
 
 func (d *Dirs) Set(v string) error {
-	*d = append(*d, v)
+	if v == "." {
+		v = cwd
+	}
+
+	if v != "" {
+		*d = append(*d, v)
+	}
 	return nil
 }
 
 func run() error {
+	var err error
+	cwd, err = os.Getwd()
+	if err != nil {
+		return err
+	}
+
 	// flags
 	var dirs Dirs
 	var entryPoint string
+	var chdir string
 	var offline bool
 	flag.Var(&dirs, "dir", "writable directory (can repeat)")
 	flag.StringVar(&entryPoint, "exec", "sh", "entry point")
+	flag.StringVar(&chdir, "chdir", "", "directory to change into")
 	flag.BoolVar(&offline, "offline", false, "no network access")
 
 	flag.Parse()
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
+	if chdir == "." {
+		chdir = cwd
 	}
+
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return err
@@ -92,6 +106,9 @@ func run() error {
 
 	// cd into first directory
 	if len(dirs) > 0 {
+	if chdir != "" {
+		args = append(args, "--chdir", chdir)
+	} else if len(dirs) > 0 {
 		d := dirs[0]
 		if d == "." {
 			d = cwd
