@@ -2,6 +2,8 @@
 
 Run processes in a sandbox. Full access to your system's binaries and tools, but the process can't mess anything up. It's like docker but without the pain.
 
+Sandbox AI agents or untrusted scripts.
+
 Powered by [bubblewrap](https://github.com/containers/bubblewrap).
 
 ## Install
