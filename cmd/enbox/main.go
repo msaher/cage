@@ -12,8 +12,10 @@ import (
 func run() error {
 	// flags
 	var dir, entryPoint string
+	var offline bool
 	flag.StringVar(&dir, "dir", "", "writeable directory")
 	flag.StringVar(&entryPoint, "exec", "sh", "entry point")
+	flag.BoolVar(&offline, "offline", false, "disable internet")
 	flag.Parse()
 
 	home, err := os.UserHomeDir()
@@ -42,20 +44,21 @@ func run() error {
 	uid := u.Uid
 	runtimeDir := filepath.Join("/run", "user", uid)
 
+
+	// common stuff we need to expose if we later want to make a
+	// sandbox that limits whats readable from /
+	// like a strict-mode or something
+	// "--ro-bind", "/usr", "/usr",
+	// "--ro-bind", "/bin", "/bin",
+	// "--ro-bind", "/lib", "/lib",
+	// "--ro-bind", "/lib64", "/lib64",
+	// "--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf", // internet
+	// "--ro-bind", "/etc/passwd", "/etc/passwd", // whoami
+	// "--ro-bind", "/etc/group", "/etc/group", // whoami
+	// "--dir", home, idk
+	// also config
 	args := []string{
 		"bwrap",
-		// common stuff we need to expose if we later want to make a
-		// sandbox that limits whats readable from /
-		// like a strict-mode or something
-		// "--ro-bind", "/usr", "/usr",
-		// "--ro-bind", "/bin", "/bin",
-		// "--ro-bind", "/lib", "/lib",
-		// "--ro-bind", "/lib64", "/lib64",
-		// "--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf", // internet
-		// "--ro-bind", "/etc/passwd", "/etc/passwd", // whoami
-		// "--ro-bind", "/etc/group", "/etc/group", // whoami
-		// "--dir", home, idk
-		// also config
 
 		// make entire host read-only
 		"--ro-bind", "/", "/",
@@ -63,20 +66,26 @@ func run() error {
 		// expose runtime
 		"--bind", runtimeDir, runtimeDir,
 
-		// use /tmp
+		// commonly needed
 		"--tmpfs", "/tmp",
+		"--proc", "/proc",
+		"--dev", "/dev",
 
 		// directories you can write to
 		"--bind", dir, dir,
 		"--bind", cache, cache,
 		"--bind", local, local,
+		}
 
-		"--proc", "/proc",
-		"--dev", "/dev",
+	if offline {
+		args = append(args, "--unshare-net")
+	}
 
+	args = append(args, []string {
 		"--chdir", dir,
 		entryPoint,
-	}
+	}...)
+
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
