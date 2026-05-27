@@ -16,6 +16,7 @@ var (
 )
 
 type Dirs []string
+type Envs []string
 
 func (d *Dirs) String() string {
 	return fmt.Sprint([]string(*d))
@@ -31,6 +32,18 @@ func (d *Dirs) Set(v string) error {
 	}
 	return nil
 }
+
+func (e *Envs) String() string {
+	return fmt.Sprint([]string(*e))
+}
+
+func (e *Envs) Set(v string) error {
+	if v != "" {
+		*e = append(*e, v)
+	}
+	return nil
+}
+
 
 func run() error {
 	// ensure bubblewrap is installed
@@ -50,11 +63,15 @@ func run() error {
 	var chdir string
 	var offline bool
 	var print bool
+	var clearEnv bool
+	var envs Envs
 	flag.Var(&rwDirs, "rw", "add read-write directory (can repeat)")
 	flag.Var(&roDirs, "ro", "add read-only directory (can repeat)")
 	flag.StringVar(&chdir, "chdir", "", "directory to change into")
 	flag.BoolVar(&offline, "offline", false, "no network access")
 	flag.BoolVar(&print, "print", false, "print bwrap command; dont run anything")
+	flag.BoolVar(&clearEnv, "clearenv", false, "clear environment variables")
+	flag.Var(&envs, "env", "set environment variable")
 	flag.Parse()
 
 	entryPoint := flag.Args()
@@ -132,6 +149,21 @@ func run() error {
 
 	if offline {
 		args = append(args, "--unshare-net")
+	}
+
+	// we could manage env variables through cmd.Env instead
+	// but --clearenv sets the right working directory for us
+	// AND -print shows env vars
+	if clearEnv {
+		args = append(args, "--clearenv")
+	}
+
+	for _, e := range envs {
+		keyval := strings.SplitN(e, "=", 2)
+		if len(keyval) != 2 {
+			return fmt.Errorf("bad environment variable %s", e)
+		}
+		args = append(args, "--setenv", keyval[0], keyval[1])
 	}
 
 	args = append(args, "--")
