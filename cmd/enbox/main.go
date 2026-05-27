@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"strings"
 )
 
 var (
@@ -48,10 +49,12 @@ func run() error {
 	var roDirs Dirs
 	var chdir string
 	var offline bool
+	var print bool
 	flag.Var(&rwDirs, "rw", "add read-write directory (can repeat)")
 	flag.Var(&roDirs, "ro", "add read-only directory (can repeat)")
 	flag.StringVar(&chdir, "chdir", "", "directory to change into")
 	flag.BoolVar(&offline, "offline", false, "no network access")
+	flag.BoolVar(&print, "print", false, "print bwrap command; dont run anything")
 	flag.Parse()
 
 	entryPoint := flag.Args()
@@ -136,6 +139,11 @@ func run() error {
 		entryPoint = []string{"sh"}
 	}
 	args = append(args, entryPoint...)
+
+	if print {
+		fmt.Println(strings.Join(args, " "))
+		return nil
+	}
 
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = os.Stdin
