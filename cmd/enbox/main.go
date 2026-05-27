@@ -89,45 +89,51 @@ func run() error {
 	if err != nil {
 		return err
 	}
-
-	u, err := user.Current()
+	configDir, err := os.UserConfigDir()
 	if err != nil {
 		return err
 	}
-	uid := u.Uid
+
+	var uid string
+	{
+		u, err := user.Current()
+		if err != nil {
+			return err
+		}
+		uid = u.Uid
+	}
 	runtimeDir := filepath.Join("/run", "user", uid)
+	_ = runtimeDir
 
 	// common stuff we need to expose if we later want to make a
 	// sandbox that limits whats readable from /
 	// like a strict-mode or something
-	// "--ro-bind", "/usr", "/usr",
-	// "--ro-bind", "/bin", "/bin",
-	// "--ro-bind", "/lib", "/lib",
-	// "--ro-bind", "/lib64", "/lib64",
-	// "--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf", // internet
-	// "--ro-bind", "/etc/passwd", "/etc/passwd", // whoami
-	// "--ro-bind", "/etc/group", "/etc/group", // whoami
 	// "--dir", home, idk
 	// also config
 	args := []string{
 		"bwrap",
 
-		// make entire host read-only
-		"--ro-bind", "/", "/",
-
-		// expose runtime
-		"--bind", runtimeDir, runtimeDir,
+		"--ro-bind", "/usr", "/usr",
+		"--ro-bind", "/bin", "/bin",
+		"--ro-bind", "/lib", "/lib",
+		"--ro-bind", "/lib64", "/lib64",
+		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf", // internet
+		"--ro-bind", "/etc/passwd", "/etc/passwd", // for whoami
+		"--ro-bind", "/etc/group", "/etc/group", // for whoami
+		"--ro-bind", configDir, configDir,
 
 		// commonly needed
 		"--tmpfs", "/tmp",
 		"--proc", "/proc",
 		"--dev", "/dev",
 
+		// fake runtime
+		"--tmpfs", runtimeDir,
+
 		// directories you can write to
 		"--bind", cache, cache,
 		"--bind", local, local,
-		}
-
+	}
 
 	for _, d := range roDirs {
 		args = append(args, "--ro-bind", d, d)
