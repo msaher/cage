@@ -28,6 +28,7 @@ func run() error {
 	flag.Var(&dirs, "dir", "writable directory (can repeat)")
 	flag.StringVar(&entryPoint, "exec", "sh", "entry point")
 	flag.BoolVar(&offline, "offline", false, "no network access")
+
 	flag.Parse()
 
 	cwd, err := os.Getwd()
