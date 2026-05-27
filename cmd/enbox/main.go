@@ -9,6 +9,8 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 var (
@@ -66,6 +68,7 @@ func run() error {
 	var clearEnv, inheritAllEnv bool
 	var envs Envs
 	var wantConfig, wantCache, wantDataDir bool
+	var envFile string
 	flag.Var(&rwDirs, "rw", "add read-write directory (can repeat)")
 	flag.Var(&roDirs, "ro", "add read-only directory (can repeat)")
 	flag.StringVar(&chdir, "chdir", "", "directory to change into")
@@ -76,6 +79,7 @@ func run() error {
 	flag.BoolVar(&wantConfig, "ro-config", false, "alias for -ro $XDG_CONFIG_HOME (fallback to ~/.config)")
 	flag.BoolVar(&wantCache, "rw-cache", false, "alias for -rw $XDG_CACHE_HOME (fallback to ~/.cache)")
 	flag.BoolVar(&wantDataDir, "rw-data", false, "alias for -rw $XDG_DATA_HOME (fallback to ~/.local/share/)")
+	flag.StringVar(&envFile, "env-file", "", "env file to set environment variables")
 	flag.Var(&envs, "env", "set environment variable")
 	flag.Parse()
 
@@ -176,7 +180,16 @@ func run() error {
 				args = append(args, "--setenv", k, v)
 			}
 		}
+	}
 
+	if envFile != "" {
+		envs, err := godotenv.Read(envFile)
+		if err != nil {
+			return err
+		}
+		for key, value := range envs {
+			args = append(args, "--setenv", key, value)
+		}
 	}
 
 	for _, e := range envs {
