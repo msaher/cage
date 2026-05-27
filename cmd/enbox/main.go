@@ -85,15 +85,6 @@ func run() error {
 		chdir = cwd
 	}
 
-	var uid string
-	{
-		u, err := user.Current()
-		if err != nil {
-			return err
-		}
-		uid = u.Uid
-	}
-
 	args := []string{
 		"bwrap",
 
@@ -177,6 +168,7 @@ func run() error {
 			"XDG_CONFIG_HOME",
 			"XDG_CACHE_HOME",
 			"XDG_DATA_HOME",
+			"XDG_RUNTIME_DIR",
 		}
 		for _, k := range envs {
 			v := os.Getenv(k)
@@ -195,6 +187,20 @@ func run() error {
 		args = append(args, "--setenv", keyval[0], keyval[1])
 	}
 
+	// used by systemd and
+	// NOTE: can't play audio without it
+	runtimeDir := os.Getenv("XDG_RUNTIME_DIR")
+	if runtimeDir == "" { // fallback
+		u, err := user.Current()
+		if err != nil {
+			return err
+		}
+		runtimeDir = filepath.Join("/run", "user", u.Uid)
+	}
+	if _, err := os.Stat(runtimeDir); err == nil {
+		args = append(args, "--bind", runtimeDir, runtimeDir)
+	}
+
 	// set special file systems
 	// NOTE: must be set before --ro-bind. Otherwise an --ro-bind can override
 	// the permissions of say, a --dev-bind
@@ -207,12 +213,6 @@ func run() error {
 		"--dev-bind", "/dev", "/dev",
 	}...)
 
-	// used by systemd and
-	// NOTE: can't play audio without it
-	runtimeDir := filepath.Join("/run", "user", uid)
-	if _, err := os.Stat(runtimeDir); err == nil {
-		args = append(args, "--bind", runtimeDir, runtimeDir)
-	}
 
 	args = append(args, "--")
 	if len(entryPoint) == 0 {
