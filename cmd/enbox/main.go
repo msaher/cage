@@ -32,7 +32,12 @@ func (d *Dirs) Set(v string) error {
 }
 
 func run() error {
-	var err error
+	// ensure bubblewrap is installed
+	_, err := exec.LookPath("bwrap")
+	if err != nil {
+		return err
+	}
+
 	cwd, err = os.Getwd()
 	if err != nil {
 		return err
@@ -144,6 +149,9 @@ func main() {
 		if code > 0 {
 			os.Exit(code)
 		}
+		os.Exit(1)
+	} else if _, ok := errors.AsType[*exec.Error](err); ok {
+		fmt.Fprintf(os.Stderr, "error: can't find bwrap. Please ensure its installed and in $PATH\n")
 		os.Exit(1)
 	} else if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
