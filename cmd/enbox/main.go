@@ -95,22 +95,18 @@ func run() error {
 	runtimeDir := filepath.Join("/run", "user", uid)
 	_ = runtimeDir
 
-	// common stuff we need to expose if we later want to make a
-	// sandbox that limits whats readable from /
-	// like a strict-mode or something
-	// "--dir", home, idk
-	// also config
 	args := []string{
 		"bwrap",
 
+		// common stuff we need
 		"--ro-bind", "/usr", "/usr",
 		"--ro-bind", "/bin", "/bin",
 		"--ro-bind", "/lib", "/lib",
 		"--ro-bind", "/lib64", "/lib64",
-		"--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf", // internet
-		"--ro-bind", "/etc/passwd", "/etc/passwd", // for whoami
-		"--ro-bind", "/etc/group", "/etc/group", // for whoami
-		"--ro-bind", configDir, configDir,
+		// whoami needs /etc/group and /etc/passwd
+		// we need /etc/resolve.conf for internet
+		"--ro-bind", "/etc/", "/etc/",
+	}
 
 	if wantConfig {
 		configDir, err := os.UserConfigDir()
