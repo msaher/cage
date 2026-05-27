@@ -93,7 +93,6 @@ func run() error {
 		}
 		uid = u.Uid
 	}
-	runtimeDir := filepath.Join("/run", "user", uid)
 
 	args := []string{
 		"bwrap",
@@ -206,11 +205,14 @@ func run() error {
 
 		// for hardware. GPU won't work without it
 		"--dev-bind", "/dev", "/dev",
-
-		// used by systemd
-		// can't play audio without it
-		"--bind", runtimeDir, runtimeDir,
 	}...)
+
+	// used by systemd and
+	// NOTE: can't play audio without it
+	runtimeDir := filepath.Join("/run", "user", uid)
+	if _, err := os.Stat(runtimeDir); err == nil {
+		args = append(args, "--bind", runtimeDir, runtimeDir)
+	}
 
 	args = append(args, "--")
 	if len(entryPoint) == 0 {
