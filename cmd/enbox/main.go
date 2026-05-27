@@ -90,6 +90,15 @@ func run() error {
 		args = append(args, "--bind", d, d)
 	}
 
+	// cd into first directory
+	if len(dirs) > 0 {
+		d := dirs[0]
+		if d == "." {
+			d = cwd
+		}
+		args = append(args, "--chdir", d)
+	}
+
 	if offline {
 		args = append(args, "--unshare-net")
 	}
