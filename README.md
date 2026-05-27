@@ -9,7 +9,7 @@ Powered by [bubblewrap](https://github.com/containers/bubblewrap).
 ## Install
 
 ```
-go install github.com/msaher/cage/cage@latest
+go install github.com/msaher/cage/cmd/cage@latest
 ```
 
 Requires `bwrap` to be installed on your system.
