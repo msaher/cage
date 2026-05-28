@@ -113,6 +113,7 @@ func run() error {
 
 	args := []string{
 		"bwrap",
+		"--unshare-pid",
 
 		// common stuff we need
 		"--ro-bind-try", "/usr", "/usr",
